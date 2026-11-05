@@ -1,8 +1,14 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Depends
 
-from app.schemas import ItemCreate
+from app.dependencies import pagination
+from app.schemas import ItemCreate, UserCreate, UserOut
 
 router = APIRouter()            # Spring의 Controller 분리와 동일하다 !
+
+# 임시 DB (메모리)
+USERS = {1: {"id": 1, "username": "test01", "password": "1234"}}
+ITEMS = [{"id": i, "name": f"item-{i}", "price": i * 1000} for i in range(1, 11)]
+
 @router.get("/type")
 def test_type(x: int):
     """
@@ -36,5 +42,27 @@ def create_item(item: ItemCreate):
 # - request bosy: {"username": "XXX", "password": "xxx"}
 # - response: {"username": "xxx", "password": "xxx"}
 @router.post("/users")
-def create_user(username: str, password: str):
-    return {"username": username, "password": password}
+def create_user(user: UserCreate):
+    """ 응답 데이터 필터링 (response_model) """
+    new_id = max(USERS) + 1
+    USERS[new_id] = {"id": new_id, "username": user.username, "password": user.password}
+    return USERS[new_id]
+
+# TODO [GET] /users/{user_id}
+# - response {"id": xx, "username": "xxx"}
+# - 함수명: get_user
+@router.get ("/users/{usesr_id}", response_model=UserOut)
+def get_user(user_id: int):
+    """ 데이터가 없을 경우 HTTPException으로 오류 응답 처리 """
+    return USERS.get(user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+# TODO [GET] /items?skip=x&limit=x
+# - response {"skip": x, "Limit": x}
+# - 함수명: list_items
+@router.get ("/items")
+def list_items(page: dict = Depends(pagination)):
+    start = page["skip"]
+    return ITEMS[start:start+page["limit"]]

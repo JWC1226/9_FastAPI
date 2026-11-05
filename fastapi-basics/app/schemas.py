@@ -9,3 +9,8 @@ class ItemCreate(BaseModel):
     """
     name: str = Field(min_length=1, max_length=50)
     price: int = Field(gt=0)
+
+# {"username": "xxx", "password": "xxx"}
+class UserCreate(BaseModel):
+    username: str
+    password: str
